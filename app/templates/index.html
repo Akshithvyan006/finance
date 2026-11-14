@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinSec AI | Secure Financial Analysis & RBAC Platform</title>
+    <meta name="description" content="Secure Role-Based Financial Analysis Chatbot and Simulation Platform with RBAC, IDOR defense, and AI prompt injection guardrails.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-group">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">FinSec<span class="brand-gradient">AI</span></span>
+                    <span class="logo-badge">RBAC v1.0</span>
+                </div>
+            </div>
+
+            <!-- Role-based Navigation Tabs -->
+            <nav class="nav-tabs" id="navTabs" aria-label="Main Navigation">
+                <button class="nav-tab active" data-tab="tab-chat" id="tabBtnChat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    AI Chatbot
+                </button>
+                <button class="nav-tab" data-tab="tab-calculators" id="tabBtnCalculators">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                    Calculators
+                </button>
+                <button class="nav-tab" data-tab="tab-user-dashboard" id="tabBtnUserDashboard">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    My Financials
+                </button>
+                <!-- Protected Analyst Tab -->
+                <button class="nav-tab rbac-restricted" data-tab="tab-analyst" id="tabBtnAnalyst" title="Requires Financial Analyst or Admin role" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    Analyst Workspace
+                </button>
+                <!-- Protected Admin Tab -->
+                <button class="nav-tab rbac-restricted" data-tab="tab-admin" id="tabBtnAdmin" title="Requires Admin role" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Security & Admin
+                </button>
+            </nav>
+
+            <!-- User Auth & Quick Role Switcher -->
+            <div class="header-actions">
+                <button id="themeToggleBtn" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+                    <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </button>
+
+                <!-- Logged In User Pill -->
+                <div class="user-pill" id="userPill" style="display:none;">
+                    <span class="user-avatar" id="userAvatar">U</span>
+                    <div class="user-meta">
+                        <span class="user-name" id="userNameLabel">User</span>
+                        <span class="user-role-badge" id="userRoleBadge">User</span>
+                    </div>
+                    <button class="btn-logout" id="logoutBtn" title="Logout session">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Unauthenticated Auth Action -->
+                <div class="auth-buttons" id="authActions">
+                    <button class="btn btn-secondary btn-sm" id="openLoginModalBtn">Sign In</button>
+                    <button class="btn btn-primary btn-sm" id="openRegisterModalBtn">Register</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Demo Switcher Bar -->
+        <div class="demo-bar">
+            <span class="demo-bar-label">⚡ Fast Role Switcher (One-Click Safe Demo Accounts):</span>
+            <div class="demo-buttons">
+                <button class="btn-demo" id="demoUserBtn" data-user="user_john" data-pass="UserPassword!2026">
+                    <span class="dot dot-blue"></span> Standard User
+                </button>
+                <button class="btn-demo" id="demoAnalystBtn" data-user="analyst_jane" data-pass="AnalystSecure!2026">
+                    <span class="dot dot-purple"></span> Financial Analyst
+                </button>
+                <button class="btn-demo" id="demoAdminBtn" data-user="admin_sec" data-pass="AdminPassword!2026">
+                    <span class="dot dot-amber"></span> Administrator
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="main-content">
+        <!-- Toast Notification Area -->
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+        <!-- TAB 1: Chatbot -->
+        <section class="tab-pane active" id="tab-chat">
+            <div class="chat-layout">
+                <div class="chat-sidebar card">
+                    <h3 class="sidebar-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        Financial Topics
+                    </h3>
+                    <p class="sidebar-desc">Explore verified financial guidelines or click a suggested prompt:</p>
+                    <div class="prompt-pills" id="suggestedPromptsContainer">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+
+                    <div class="security-indicator">
+                        <div class="indicator-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span class="indicator-title">AI Guardrails Active</span>
+                        </div>
+                        <p class="indicator-text">Strict prompt injection defense, SQLi prevention, and financial privacy filters are continuously enforced.</p>
+                    </div>
+                </div>
+
+                <div class="chat-window card">
+                    <div class="chat-header">
+                        <div class="bot-avatar">🤖</div>
+                        <div class="bot-info">
+                            <h4>FinSec Financial Analyst Bot</h4>
+                            <span class="status-online"><span class="pulse-dot"></span> Ready for educational queries</span>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot-message">
+                            <div class="message-bubble">
+                                <p><strong>Welcome to FinSec AI!</strong> I am your secure financial assistant. You can ask me questions about:</p>
+                                <ul>
+                                    <li>Emergency savings & high-yield strategies</li>
+                                    <li>50/30/20 & zero-based budgeting</li>
+                                    <li>Debt reduction (Snowball vs. Avalanche)</li>
+                                    <li>Inflation impact on purchasing power</li>
+                                    <li>Basic investment diversification & index funds</li>
+                                </ul>
+                                <div class="message-disclaimer">
+                                    <small>ℹ️ All responses are educational estimates and do not constitute certified financial advice.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form class="chat-input-bar" id="chatForm">
+                        <input type="text" id="chatInput" placeholder="Ask a financial question (e.g. 'How does the 50/30/20 budget work?')..." autocomplete="off" maxlength="500">
+                        <button type="submit" class="btn btn-primary" id="chatSendBtn">
+                            <span>Send</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Financial Calculators -->
+        <section class="tab-pane" id="tab-calculators">
+            <div class="calc-subnav">
+                <button class="calc-subtab active" data-calc="calc-budget">Budget Planner (50/30/20)</button>
+                <button class="calc-subtab" data-calc="calc-savings">Savings & Compound Interest</button>
+                <button class="calc-subtab" data-calc="calc-loan">Loan Amortization</button>
+            </div>
+
+            <!-- Subcalc A: Budget -->
+            <div class="calc-content active" id="calc-budget">
+                <div class="calc-grid">
+                    <div class="card calc-form-card">
+                        <h3>Monthly Budget Configuration</h3>
+                        <p class="text-muted">Enter your monthly net take-home pay and adjust target allocations.</p>
+
+                        <div class="form-group">
+                            <label for="budgetIncome">Monthly Net Income ($):</label>
+                            <input type="number" id="budgetIncome" value="5000" min="100" max="1000000" step="50">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="budgetNeedsPct">Needs (%)</label>
+                                <input type="number" id="budgetNeedsPct" value="50" min="10" max="90">
+                            </div>
+                            <div class="form-group">
+                                <label for="budgetWantsPct">Wants (%)</label>
+                                <input type="number" id="budgetWantsPct" value="30" min="0" max="90">
+                            </div>
+                            <div class="form-group">
+                                <label for="budgetSavingsPct">Savings (%)</label>
+                                <input type="number" id="budgetSavingsPct" value="20" min="0" max="90">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="budgetNotes">Plan Label / Notes:</label>
+                            <input type="text" id="budgetNotes" placeholder="e.g. 2026 Core Family Budget" maxlength="100">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="runBudgetCalcBtn">Calculate Budget</button>
+                            <button class="btn btn-secondary" id="saveBudgetBtn">Save Plan to Profile</button>
+                        </div>
+                    </div>
+
+                    <div class="card calc-results-card">
+                        <h3>Allocation Visualizer</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                        <div class="results-metrics-grid" id="budgetMetrics">
+                            <div class="metric-box">
+                                <span class="metric-label">Needs (50%)</span>
+                                <span class="metric-val" id="metricNeeds">$2,500.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Wants (30%)</span>
+                                <span class="metric-val" id="metricWants">$1,500.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Savings (20%)</span>
+                                <span class="metric-val" id="metricSavings">$1,000.00</span>
+                            </div>
+                            <div class="metric-box highlight">
+                                <span class="metric-label">6-Mo Emergency Target</span>
+                                <span class="metric-val" id="metricEmergencyTarget">$15,000.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subcalc B: Savings & Compound -->
+            <div class="calc-content" id="calc-savings">
+                <div class="calc-grid">
+                    <div class="card calc-form-card">
+                        <h3>Compound Interest & Growth Projection</h3>
+                        <p class="text-muted">Estimate future wealth growth with recurring deposits.</p>
+
+                        <div class="form-group">
+                            <label for="savingsInitial">Initial Deposit ($):</label>
+                            <input type="number" id="savingsInitial" value="5000" min="0" step="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="savingsMonthly">Monthly Contribution ($):</label>
+                            <input type="number" id="savingsMonthly" value="400" min="0" step="50">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="savingsRate">Annual Return (%):</label>
+                                <input type="number" id="savingsRate" value="6.5" min="0" max="30" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="savingsYears">Years Horizon:</label>
+                                <input type="number" id="savingsYears" value="10" min="1" max="50">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="savingsGoalTitle">Goal Title:</label>
+                            <input type="text" id="savingsGoalTitle" placeholder="e.g. Down Payment on Home" maxlength="100">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="runSavingsCalcBtn">Calculate Growth</button>
+                            <button class="btn btn-secondary" id="saveSavingsBtn">Save Goal to Profile</button>
+                        </div>
+                    </div>
+
+                    <div class="card calc-results-card">
+                        <h3>Growth Trajectory</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="savingsChart"></canvas>
+                        </div>
+                        <div class="results-metrics-grid" id="savingsMetrics">
+                            <div class="metric-box">
+                                <span class="metric-label">Future Value</span>
+                                <span class="metric-val text-success" id="metricFutureValue">$0.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Total Principal Invested</span>
+                                <span class="metric-val" id="metricTotalPrincipal">$0.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Total Interest Earned</span>
+                                <span class="metric-val text-brand" id="metricTotalInterest">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subcalc C: Loan Repayment -->
+            <div class="calc-content" id="calc-loan">
+                <div class="calc-grid">
+                    <div class="card calc-form-card">
+                        <h3>Loan Repayment & Amortization</h3>
+                        <p class="text-muted">Analyze debt service schedules and total interest cost.</p>
+
+                        <div class="form-group">
+                            <label for="loanPrincipal">Loan Amount ($):</label>
+                            <input type="number" id="loanPrincipal" value="25000" min="500" step="500">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="loanRate">Interest Rate (APR %):</label>
+                                <input type="number" id="loanRate" value="6.2" min="0" max="40" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="loanTermMonths">Term (Months):</label>
+                                <input type="number" id="loanTermMonths" value="60" min="6" max="360" step="6">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loanNameInput">Loan Description:</label>
+                            <input type="text" id="loanNameInput" placeholder="e.g. Auto Loan Refinance" maxlength="100">
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="runLoanCalcBtn">Calculate Repayment</button>
+                            <button class="btn btn-secondary" id="saveLoanBtn">Save Loan Scenario</button>
+                        </div>
+                    </div>
+
+                    <div class="card calc-results-card">
+                        <h3>Payment & Cost Breakdown</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="loanChart"></canvas>
+                        </div>
+                        <div class="results-metrics-grid" id="loanMetrics">
+                            <div class="metric-box highlight">
+                                <span class="metric-label">Monthly Payment</span>
+                                <span class="metric-val text-brand" id="metricMonthlyPayment">$0.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Total Interest</span>
+                                <span class="metric-val text-warning" id="metricLoanInterest">$0.00</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Total Amount Paid</span>
+                                <span class="metric-val" id="metricLoanTotal">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: User Financial Dashboard -->
+        <section class="tab-pane" id="tab-user-dashboard">
+            <div class="dashboard-header">
+                <h2>My Financial Summary & Saved Plans</h2>
+                <p class="text-muted">Access, review, and manage your private financial scenarios (Protected with strict tenant IDOR verification).</p>
+            </div>
+
+            <div class="stats-grid" id="userStatsGrid">
+                <div class="stat-card">
+                    <span class="stat-title">Active Budgets</span>
+                    <span class="stat-value" id="statBudgetCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Savings Goals</span>
+                    <span class="stat-value" id="statGoalsCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Projected Savings</span>
+                    <span class="stat-value text-success" id="statTotalSavings">$0.00</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Tracked Loan Balances</span>
+                    <span class="stat-value text-warning" id="statTotalDebt">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Saved records lists -->
+            <div class="records-grid">
+                <div class="card">
+                    <h3>Saved Budget Plans</h3>
+                    <div class="table-responsive">
+                        <table class="data-table" id="savedBudgetsTable">
+                            <thead>
+                                <tr>
+                                    <th>Income</th>
+                                    <th>Needs</th>
+                                    <th>Wants</th>
+                                    <th>Savings</th>
+                                    <th>Notes</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center text-muted">No saved budgets yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Saved Savings Goals</h3>
+                    <div class="table-responsive">
+                        <table class="data-table" id="savedGoalsTable">
+                            <thead>
+                                <tr>
+                                    <th>Goal</th>
+                                    <th>Monthly</th>
+                                    <th>Rate</th>
+                                    <th>Years</th>
+                                    <th>Projected Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center text-muted">No saved goals yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card full-width">
+                    <h3>Tracked Loan Scenarios</h3>
+                    <div class="table-responsive">
+                        <table class="data-table" id="savedLoansTable">
+                            <thead>
+                                <tr>
+                                    <th>Loan Name</th>
+                                    <th>Principal</th>
+                                    <th>APR</th>
+                                    <th>Term</th>
+                                    <th>Monthly Payment</th>
+                                    <th>Total Interest</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="text-center text-muted">No loan scenarios saved yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: Financial Analyst Workspace (Restricted) -->
+        <section class="tab-pane" id="tab-analyst">
+            <div class="dashboard-header">
+                <div class="badge-role-tag analyst-badge">Role: Financial Analyst</div>
+                <h2>Macroeconomic Indicators & Stress Testing</h2>
+                <p class="text-muted">Access authorized market cohorts, run macroeconomic shock sensitivity tests, and simulate Monte Carlo projections.</p>
+            </div>
+
+            <!-- Macro Datasets -->
+            <div class="card analyst-section">
+                <h3>Authorized Macro Datasets</h3>
+                <div class="chart-wrapper-large">
+                    <canvas id="macroChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stress Test & Monte Carlo Grid -->
+            <div class="calc-grid">
+                <!-- Stress Test Card -->
+                <div class="card">
+                    <h3>Macro Stress Testing</h3>
+                    <p class="text-muted">Simulate portfolio sensitivity to interest rate hikes and inflation shocks.</p>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stressEquity">Equities (%):</label>
+                            <input type="number" id="stressEquity" value="60" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="stressBond">Bonds (%):</label>
+                            <input type="number" id="stressBond" value="30" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="stressCash">Cash (%):</label>
+                            <input type="number" id="stressCash" value="10" min="0" max="100">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stressInfBps">Inflation Shock (bps):</label>
+                            <input type="number" id="stressInfBps" value="250" min="0" max="1000" step="25">
+                        </div>
+                        <div class="form-group">
+                            <label for="stressRateBps">Rate Hike (bps):</label>
+                            <input type="number" id="stressRateBps" value="200" min="0" max="1000" step="25">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="runStressTestBtn">Execute Stress Test</button>
+
+                    <div class="stress-results" id="stressResultsContainer" style="display:none; margin-top:1.5rem;">
+                        <div class="metric-box highlight">
+                            <span class="metric-label">Net Projected Impact</span>
+                            <span class="metric-val" id="stressNetImpact">-0.00%</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Sensitivity Rating</span>
+                            <span class="metric-val" id="stressRiskRating">Moderate</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monte Carlo Card -->
+                <div class="card">
+                    <h3>Monte Carlo Risk Projection</h3>
+                    <p class="text-muted">500-iteration stochastic return simulation with 10th, 50th, and 90th percentile bounds.</p>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mcInitial">Initial Investment ($):</label>
+                            <input type="number" id="mcInitial" value="20000" min="1000">
+                        </div>
+                        <div class="form-group">
+                            <label for="mcMonthly">Monthly Deposit ($):</label>
+                            <input type="number" id="mcMonthly" value="600" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mcMean">Expected Return (%):</label>
+                            <input type="number" id="mcMean" value="8.0" min="0" max="25" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="mcVol">Volatility / StdDev (%):</label>
+                            <input type="number" id="mcVol" value="16.0" min="1" max="40" step="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="mcYears">Years:</label>
+                            <input type="number" id="mcYears" value="10" min="2" max="25">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="runMonteCarloBtn">Run Monte Carlo Simulation</button>
+
+                    <div class="chart-wrapper" style="margin-top:1.5rem;">
+                        <canvas id="monteCarloChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: Security & Admin Dashboard (Admin Only) -->
+        <section class="tab-pane" id="tab-admin">
+            <div class="dashboard-header">
+                <div class="badge-role-tag admin-badge">Role: System Administrator</div>
+                <h2>Security Administration & Audit Logs</h2>
+                <p class="text-muted">Manage system users, reassign RBAC roles, review tamper-evident audit logs, and inspect security telemetry.</p>
+            </div>
+
+            <!-- Admin Overview Metrics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-title">Total Users</span>
+                    <span class="stat-value" id="adminTotalUsers">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Audit Events Logged</span>
+                    <span class="stat-value" id="adminTotalAudits">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Failed Login Attempts</span>
+                    <span class="stat-value text-warning" id="adminFailedLogins">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Security Violations Flagged</span>
+                    <span class="stat-value text-danger" id="adminSecurityAlerts">0</span>
+                </div>
+            </div>
+
+            <!-- User Management Card -->
+            <div class="card" style="margin-bottom:1.5rem;">
+                <div class="card-header-flex">
+                    <h3>User Directory & RBAC Assignment</h3>
+                    <button class="btn btn-sm btn-secondary" id="refreshUsersBtn">Refresh Users</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="adminUsersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated via admin.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Security Audit Logs Card -->
+            <div class="card">
+                <div class="card-header-flex">
+                    <div>
+                        <h3>Immutable Security Audit Logs</h3>
+                        <p class="text-muted">Zero-exposure logging: Passwords, tokens, and PII are never persisted in audit traces.</p>
+                    </div>
+                    <div class="filter-controls">
+                        <select id="auditFilterAction">
+                            <option value="">All Actions</option>
+                            <option value="AUTH_LOGIN">AUTH_LOGIN</option>
+                            <option value="AUTH_LOGIN_FAILED">AUTH_LOGIN_FAILED</option>
+                            <option value="ACCESS_CONTROL_VIOLATION">ACCESS_CONTROL_VIOLATION</option>
+                            <option value="CHATBOT_PROMPT_INJECTION_DETECTED">CHATBOT_PROMPT_INJECTION</option>
+                            <option value="IDOR_ATTEMPT">IDOR_ATTEMPT</option>
+                            <option value="USER_ROLE_CHANGE">USER_ROLE_CHANGE</option>
+                        </select>
+                        <select id="auditFilterStatus">
+                            <option value="">All Statuses</option>
+                            <option value="SUCCESS">SUCCESS</option>
+                            <option value="DENIED">DENIED</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="FAILED">FAILED</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" id="refreshAuditBtn">Filter Logs</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="auditLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Timestamp (UTC)</th>
+                                <th>User</th>
+                                <th>IP Address</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>Status</th>
+                                <th>Sanitized Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated via admin.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Login -->
+    <div class="modal" id="loginModal">
+        <div class="modal-dialog">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>Sign In to FinSec AI</h3>
+                    <button class="btn-close" data-close-modal>&times;</button>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUser">Username or Email:</label>
+                        <input type="text" id="loginUser" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPass">Password:</label>
+                        <input type="password" id="loginPass" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width" id="submitLoginBtn">Sign In</button>
+                </form>
+                <div class="modal-footer">
+                    <p class="text-muted">Or use the 1-click safe demo buttons in the top banner.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Register -->
+    <div class="modal" id="registerModal">
+        <div class="modal-dialog">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h3>Create an Account</h3>
+                    <button class="btn-close" data-close-modal>&times;</button>
+                </div>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regUsername">Username (3-30 chars):</label>
+                        <input type="text" id="regUsername" required pattern="^[a-zA-Z0-9_-]{3,30}$">
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email Address:</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password (Min 10 chars, uppercase, lowercase, number, symbol):</label>
+                        <input type="password" id="regPassword" required minlength="10">
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width" id="submitRegisterBtn">Register Account</button>
+                </form>
+                <div class="modal-footer">
+                    <p class="text-muted">Self-registered accounts receive standard 'User' role to prevent privilege escalation.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/chatbot.js"></script>
+    <script src="/static/js/calculators.js"></script>
+    <script src="/static/js/analyst.js"></script>
+    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
